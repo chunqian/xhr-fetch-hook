@@ -6,13 +6,13 @@
 
 // interceptors = {
 //     requestInterceptors: {
-//         itc1: function(input, init) {
+//         itc1: function(req) {
 //             ....do something
-//             return init
+//             return req
 //         },
-//         itc2: function(input, init) {
+//         itc2: function(req) {
 //             ....do something
-//             return init
+//             return req
 //         },
 //     },
 //     responseInterceptors: {
@@ -39,7 +39,7 @@ export function hookFetch(interceptors, realWindow = window) {
     let interceptors_req = [],
         interceptors_res = [];
 
-    let url;
+    let interceptor_req = {};
 
     function c_fetch(input, init = {}) {
         //fetch默认请求方式设为GET
@@ -47,17 +47,20 @@ export function hookFetch(interceptors, realWindow = window) {
             init.method = "GET";
         }
 
+        interceptor_req.input = input
+        interceptor_req.init = init
+
         //interceptors_req是拦截请求的拦截处理函数集合
         if (interceptors_req.length) {
-            url = interceptors_req.reduce((init, interceptor) => {
+            interceptor_req = interceptors_req.reduce((interceptor_req, interceptor) => {
                 return c_fetch.interceptors.interceptors.requestInterceptors[
                     interceptor
-                ](input, init);
-            }, init);
+                ](interceptor_req);
+            }, interceptor_req);
         }
 
         return new Promise(function (resolve, reject) {
-            realWindow[realFetch](url, init)
+            realWindow[realFetch](interceptor_req.input, interceptor_req.init)
                 .then((res) => {
                     // 分流
                     const [progressStream, returnStream] = res.body.tee();
